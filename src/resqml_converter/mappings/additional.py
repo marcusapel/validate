@@ -641,7 +641,7 @@ def convert_md_datum_to_22(obj: Any, ctx: ConversionContext) -> Any:
     
     We convert to a LocalEngineeringCompoundCrs sub-reference or pass through as metadata.
     """
-    # MdDatum doesn't exist as standalone in 2.2 — absorbed into WellboreTrajectory.md_interval.datum
+    # MdDatum doesn't exist as standalone in 2.2 - absorbed into WellboreTrajectory.md_interval.datum
     # Return None so it's skipped; trajectories reference it via DOR which maps to CRS
     ctx.warn(f"MdDatum {get_obj_uuid(obj)} has no standalone equivalent in 2.2; referenced from trajectories")
     return None

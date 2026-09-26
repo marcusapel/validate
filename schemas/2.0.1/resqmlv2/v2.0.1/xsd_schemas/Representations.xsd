@@ -85,7 +85,7 @@ NOTE: The geometric location of each set of simple elements mapped through the b
 			</xs:enumeration>
 			<xs:enumeration value="previous colocation">
 				<xs:annotation>
-					<xs:documentation>The participating (sub)representations were collocated at some time in the geologic past—but not necessarily in the present day earth model.</xs:documentation>
+					<xs:documentation>The participating (sub)representations were collocated at some time in the geologic past-but not necessarily in the present day earth model.</xs:documentation>
 				</xs:annotation>
 			</xs:enumeration>
 			<xs:enumeration value="equivalence">
@@ -95,7 +95,7 @@ NOTE: The geometric location of each set of simple elements mapped through the b
 			</xs:enumeration>
 			<xs:enumeration value="previous equivalence">
 				<xs:annotation>
-					<xs:documentation>The participating (sub)representations were equivalent at some time in the geologic past—but not necessarily in the present day earth model.</xs:documentation>
+					<xs:documentation>The participating (sub)representations were equivalent at some time in the geologic past-but not necessarily in the present day earth model.</xs:documentation>
 				</xs:annotation>
 			</xs:enumeration>
 		</xs:restriction>

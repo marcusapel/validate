@@ -536,7 +536,7 @@ Typically contains:
 	- A contact interpretation between two surface geological boundaries is usually a line.
 	- A contact interpretation between two volumes (rock feature-interpretation) is usually a surface. 
 
-This class allows you to build a formal sentence—in the pattern of subject-verb-direct object—which is used to describe the construction of a node, line, or surface contact. It is also possible to attach a primary and a secondary qualifier to the subject and to the direct object.
+This class allows you to build a formal sentence-in the pattern of subject-verb-direct object-which is used to describe the construction of a node, line, or surface contact. It is also possible to attach a primary and a secondary qualifier to the subject and to the direct object.
 
 For more information, see the RESQML Technical Usage Guide.
 
@@ -812,7 +812,7 @@ In an earth model, a geological unit interrupted by faults may consist of severa
 	<xs:element name="GeologicUnitOccurrenceInterpretation" type="resqml:GeologicUnitOccurrenceInterpretation" substitutionGroup="eml:AbstractDataObject"/>
 	<xs:complexType name="GeologicUnitOccurrenceInterpretation">
 		<xs:annotation>
-			<xs:documentation>A local Interpretation—it could be along a well, on a 2D map, or on a 2D section or on a part of the global volume of an earth model—of a succession of rock feature elements.
+			<xs:documentation>A local Interpretation-it could be along a well, on a 2D map, or on a 2D section or on a part of the global volume of an earth model-of a succession of rock feature elements.
 The stratigraphic column rank interpretation composing a stratigraphic occurrence can be ordered by the criteria listed in OrderingCriteria.
 Note: When the chosen ordering criterion is not age but measured depth along a well trajectory, the semantics of the name of this class could be inconsistent semantics. In this case:
 	- When faults are present, the observed succession may show repetition of a stratigraphic succession composed of a series of units each younger than the one below it.

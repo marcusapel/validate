@@ -120,6 +120,11 @@ def convert_dor_23_to_201(
 
 # ─── Array Conversion (HDF5 references) ──────────────────────────────────────
 
+# URI written into every 2.2 ExternalDataArrayPart. convert_epc() overrides this
+# to the actual output HDF5 file name so the references resolve.
+EXTERNAL_H5_URI = "data.h5"
+
+
 def convert_hdf5_dataset_to_external_array(
     hdf_ds: Any,
     hdf_proxy_uuid: Optional[str] = None,
@@ -135,7 +140,7 @@ def convert_hdf5_dataset_to_external_array(
         external_data_array_part=[
             eml23.ExternalDataArrayPart(
                 path_in_external_file=path,
-                uri="data.h5",  # Will be updated during EPC assembly
+                uri=EXTERNAL_H5_URI,
                 count=[1],
                 start_index=[0],
             )

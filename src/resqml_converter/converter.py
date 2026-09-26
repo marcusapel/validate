@@ -131,15 +131,25 @@ def convert_epc(
     # Get all source objects
     source_objects = get_all_objects(epc)
 
+    # Point 2.2 array references at the (single, merged) output HDF5 file so they
+    # resolve. Must be set BEFORE conversion, since URIs are written while the
+    # per-type converters build ExternalDataArrayPart elements.
+    if direction == "201_to_22":
+        from resqml_converter.mappings import common as _common
+        _common.EXTERNAL_H5_URI = Path(output_path).with_suffix(".h5").name
+
     # Convert
     converted, ctx = convert_objects(source_objects, direction)
 
     # Build output EPC
     output_epc = create_output_epc(converted)
 
-    # Copy HDF5 files alongside output
+    # Copy/merge HDF5 files alongside output
     if copy_h5:
-        _copy_h5_files(input_path, output_path)
+        if direction == "201_to_22":
+            _merge_h5_files(input_path, output_path)
+        else:
+            _copy_h5_files(input_path, output_path)
 
     # Write output
     write_epc(output_epc, output_path)
@@ -191,6 +201,7 @@ def convert_objects(
         try:
             result = registry.convert(obj, ctx)
             if result is not None:
+                _propagate_extra_metadata(obj, result, direction)
                 ctx.register(uuid, result)
                 converted.append(result)
         except Exception as e:
@@ -216,8 +227,32 @@ def _sort_by_conversion_order(objects: List[Any]) -> List[Any]:
     return sorted(objects, key=order_key)
 
 
+def _propagate_extra_metadata(source_obj, result_obj, direction: str) -> None:
+    """Carry OSDU/ExtraMetadata across the version boundary.
+
+    2.0.1 objects store metadata in ``extra_metadata`` (NameValuePair); 2.2/EML2.3
+    objects use ``extension_name_value`` (ExtensionNameValue). The per-type
+    converters rebuild objects field-by-field and drop this metadata, so we
+    re-attach it generically here for every converted object.
+    """
+    from resqml_converter.mappings.common import (
+        convert_extra_metadata_to_extension,
+        convert_extension_to_extra_metadata,
+    )
+
+    if direction == "201_to_22":
+        src = getattr(source_obj, "extra_metadata", None)
+        if src and hasattr(result_obj, "extension_name_value"):
+            existing = list(getattr(result_obj, "extension_name_value", None) or [])
+            result_obj.extension_name_value = existing + convert_extra_metadata_to_extension(src)
+    else:
+        src = getattr(source_obj, "extension_name_value", None)
+        if src and hasattr(result_obj, "extra_metadata"):
+            existing = list(getattr(result_obj, "extra_metadata", None) or [])
+            result_obj.extra_metadata = existing + convert_extension_to_extra_metadata(src)
+
+
 def _copy_h5_files(input_path: str, output_path: str) -> None:
-    """Copy HDF5 files associated with the input EPC to the output location."""
     input_dir = Path(input_path).parent
     output_dir = Path(output_path).parent
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -227,6 +262,38 @@ def _copy_h5_files(input_path: str, output_path: str) -> None:
         dest = output_dir / h5_file.name
         if not dest.exists():
             shutil.copy2(h5_file, dest)
+
+
+def _merge_h5_files(input_path: str, output_path: str) -> None:
+    """Merge every source HDF5 file into a single output HDF5.
+
+    2.0.1 EPCs often split arrays across multiple HDF5 proxies (e.g. a main file
+    plus a structural file). RESQML 2.2 ExternalDataArrayPart references carry one
+    URI each; convert_epc() points them all at ``<output stem>.h5``, so all source
+    datasets must live in that single file for the references to resolve.
+    """
+    import h5py
+
+    input_dir = Path(input_path).parent
+    out_h5 = Path(output_path).with_suffix(".h5")
+    out_h5.parent.mkdir(parents=True, exist_ok=True)
+
+    sources = sorted(input_dir.glob("*.h5"))
+    if not sources:
+        return
+
+    def _copy_group(src_grp, dst_grp):
+        for key, item in src_grp.items():
+            if isinstance(item, h5py.Group):
+                sub = dst_grp.require_group(key)
+                _copy_group(item, sub)
+            elif key not in dst_grp:  # first writer wins; avoid clobbering
+                src_grp.copy(key, dst_grp, name=key)
+
+    with h5py.File(out_h5, "w") as dst:
+        for src_path in sources:
+            with h5py.File(src_path, "r") as src:
+                _copy_group(src, dst)
 
 
 class ConversionResult:

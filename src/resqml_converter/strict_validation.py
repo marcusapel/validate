@@ -43,7 +43,9 @@ _SCHEMAS_DIR = Path(__file__).resolve().parent.parent.parent / "schemas"
 
 SCHEMA_PATHS = {
     "2.0.1": _SCHEMAS_DIR / "2.0.1" / "resqmlv2" / "v2.0.1" / "xsd_schemas" / "ResqmlAllObjects.xsd",
+    "2.0.2": _SCHEMAS_DIR / "2.0.2" / "resqmlv2" / "v2.0.2" / "xsd_schemas" / "ResqmlAllObjects.xsd",
     "2.2": _SCHEMAS_DIR / "2.2" / "ResqmlAllObjects.xsd",
+    "2.3.0": _SCHEMAS_DIR / "2.3.0" / "resqml" / "v2.3.0" / "xsd_schemas" / "ResqmlAllObjects.xsd",
 }
 
 # Namespaces used in RESQML XML documents
@@ -209,26 +211,53 @@ def _load_schema(version: str) -> etree.XMLSchema:
 # --- Version detection ---
 
 
-def detect_version_from_xml(xml_bytes: bytes) -> Optional[str]:
-    """Detect RESQML version from XML content."""
-    try:
-        # Quick parse to check root element namespace and schema version
-        root = etree.fromstring(xml_bytes)
-        # Check for version attribute on schema or schemaVersion attribute
-        schema_version = root.get("schemaVersion") or root.get("version")
-        if schema_version:
-            if "2.0" in schema_version and "2.2" not in schema_version:
-                return "2.0.1"
-            elif "2.2" in schema_version:
-                return "2.2"
+def _normalize_resqml_version(schema_version: Optional[str]) -> Optional[str]:
+    """Map a raw RESQML schemaVersion/content-type version to a package release.
 
-        # Detect from namespace or element naming
+    RESQML releases pair with EML releases using DIFFERENT numbers:
+      RESQML 2.0.1 / 2.0.2 <-> EML 2.0
+      RESQML 2.2           <-> EML 2.3 (released)
+      RESQML 2.3.0         <-> EML 2.3 (unreleased variant)
+    RESQML 2.0.x content-types carry version=2.0 (2.0.1 and 2.0.2 are binary
+    compatible), so 2.0 defaults to 2.0.1 unless an explicit 2.0.2 is seen.
+    """
+    if not schema_version:
+        return None
+    sv = schema_version.strip()
+    if sv.startswith("2.0.2"):
+        return "2.0.2"
+    if sv.startswith("2.0"):
+        return "2.0.1"
+    if sv.startswith("2.2"):
+        return "2.2"
+    if sv.startswith("2.3"):
+        return "2.3.0"
+    return None
+
+
+def detect_version_from_xml(xml_bytes: bytes) -> Optional[str]:
+    """Detect the RESQML package version from a single XML object.
+
+    Only RESQML domain objects carry the package release in their schemaVersion.
+    EML/common objects (CRS, PropertyKind) carry the EML version ("2.3") which is
+    ambiguous between RESQML 2.2 and 2.3.0, so they are not used to decide the
+    package version (return None and let the EPC-level detection decide).
+    """
+    try:
+        root = etree.fromstring(xml_bytes)
         tag = root.tag
-        if "resqmlv2" in tag:
-            # Check if element name has obj_ prefix (2.0.1 convention)
+        is_resqml = "resqmlv2" in tag
+        schema_version = root.get("schemaVersion") or root.get("version")
+        if is_resqml:
+            v = _normalize_resqml_version(schema_version)
+            if v:
+                return v
+            # Fall back to naming/namespace heuristics for RESQML objects.
             local = etree.QName(tag).localname
             if local.startswith("obj_"):
-                return "2.0.1"
+                return "2.0.1"  # obj_ prefix is the 2.0.x convention
+            if schema_version and "2.3" in schema_version:
+                return "2.3.0"
             return "2.2"
     except Exception:
         pass
@@ -236,16 +265,25 @@ def detect_version_from_xml(xml_bytes: bytes) -> Optional[str]:
 
 
 def detect_version_from_epc(epc_path: str) -> Optional[str]:
-    """Detect RESQML version from EPC file content types."""
+    """Detect the RESQML package version from EPC content types."""
     try:
         with zipfile.ZipFile(epc_path, "r") as zf:
             if "[Content_Types].xml" in zf.namelist():
                 ct = zf.read("[Content_Types].xml").decode("utf-8")
+                # Key off the RESQML content type version (the package release),
+                # not the EML content type.
+                m = re.search(r"x-resqml\+xml;\s*version=\"?([0-9.]+)", ct)
+                if m:
+                    v = _normalize_resqml_version(m.group(1))
+                    if v:
+                        return v
+                if 'version="2.3"' in ct or "version=2.3" in ct:
+                    return "2.3.0"
+                if 'version="2.2"' in ct or "version=2.2" in ct:
+                    return "2.2"
                 if 'version="2.0"' in ct or "version=2.0" in ct:
                     return "2.0.1"
-                elif 'version="2.2"' in ct or "version=2.2" in ct:
-                    return "2.2"
-            # Fallback: check first XML file
+            # Fallback: check the first RESQML domain XML part.
             for name in zf.namelist():
                 if name.endswith(".xml") and name != "[Content_Types].xml" and not name.startswith("_rels"):
                     data = zf.read(name)

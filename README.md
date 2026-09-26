@@ -3,7 +3,7 @@
 Two-way converter between RESQML 2.0.1 (EML 2.0) and RESQML 2.2/2.2.1 (EML 2.3) with complete object support,
 including EPC+HDF5 dataspace handling, **strict XSD validation**, and OSDU metadata enrichment.
 
-Produces output that passes strict schema validation with **0 errors** — suitable for
+Produces output that passes strict schema validation with **0 errors** - suitable for
 direct ETP ingestion into RDDMS/OSDU without post-processing.
 
 ## Features
@@ -77,7 +77,7 @@ pip install -e .
 
 ## Usage
 
-### CLI — Convert
+### CLI - Convert
 
 ```bash
 # Convert 2.0.1 to 2.2 (strict output)
@@ -90,7 +90,7 @@ resqml-convert convert input_201.epc --output output_22.epc --target-version 2.2
 resqml-convert convert input_22.epc --output output_201.epc --target-version 2.0.1
 ```
 
-### CLI — Validate
+### CLI - Validate
 
 ```bash
 # Strict validation against RESQML 2.2 XSD schemas
@@ -106,7 +106,7 @@ resqml-validate input_201.epc --version 2.0.1
 resqml-validate output_22.epc --version 2.2 --json
 ```
 
-### CLI — Standalone Script (with OSDU enrichment)
+### CLI - Standalone Script (with OSDU enrichment)
 
 ```bash
 # Generic converter with OSDU metadata injection

@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema targetNamespace="http://www.energistics.org/energyml/data/resqmlv2" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:resqml="http://www.energistics.org/energyml/data/resqmlv2" xmlns:eml="http://www.energistics.org/energyml/data/commonv2" elementFormDefault="qualified" version="2.3.0" attributeFormDefault="unqualified">
+	<!--														-->
+	<!-- Energistics License Agreement
+			This file is distributed under the Energistics Product License Agreement at
+			http://www.energistics.org/product-license-agreement
+			Use of this file constitutes agreement with the Energistics Product License Agreement.
+			Copyright (c) 2021 Energistics. All rights reserved.
+			Energistics, WITSML, PRODML and RESQML are trademarks or registered trademarks of Energistics.
+			-->
+	<!--														-->
+	<xs:annotation>
+		<xs:documentation>This package contains classes used to define and exchange property data in RESQML. 
+Individual property values are attached to a single type of element in the representation, either its topological elements, such as nodes or cells, or larger elements such as the entire representation or large parts of it, through patches and sub-representations.
+Each property value is also associated with a single property type, which provides global semantics about the meaning of these values. Property values can also be associated with facets, which provide additional context for the values.
+It is very common in subsurface/earth modeling workflows to follow the evolution of some property values through time or to consider them together as a group of property values attached to the same or different representations and property types. To capture this information, RESQML provides the notion of time series and a property group. 
+When spatial locations (geometry) need to be stored for specific elements in a representation, then property points are used.</xs:documentation>
+	</xs:annotation>
+	<!--														-->
+	<xs:import namespace="http://www.energistics.org/energyml/data/commonv2" schemaLocation="../../../common/v2.3/xsd_schemas/EmlAllObjects.xsd"/>
+	<!--														-->
+	<xs:include schemaLocation="Geometry.xsd"/>
+	<xs:include schemaLocation="Representations.xsd"/>
+	<xs:complexType name="AbstractProperty" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Base class for storing all property values on representations, except current geometry location.
+Values attached to a given element can be either a scalar or a vector. The size of the vector is constant on all elements, and it is assumed that all elements of the vector have identical property types and share the same unit of measure.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="eml:AbstractObject">
+				<xs:sequence>
+					<xs:element name="IndexableElement" type="eml:IndexableElement" minOccurs="1" maxOccurs="1"/>
+					<xs:element name="Time" type="eml:GeologicTime" minOccurs="0" maxOccurs="1"/>
+					<xs:element name="RealizationIndices" type="eml:AbstractIntegerArray" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Provide the list of indices corresponding to realizations number. For example, if a user wants to send the realization corresponding to p10, p20, ... he would write the array 10, 20, ...
+If not provided, then the realization count (which could be 1) does not introduce a dimension to the multi-dimensional array storage.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="ValueCountPerIndexableElement" type="eml:PositiveLong" minOccurs="1" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>The count of value in one dimension for each indexable element. It is ordered as the values are ordered in the data set. REMINDER: First (left) given dimension is slowest and last (right) given dimension is fastest. The top XML element is slower than the bottom.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="PropertyKind" type="eml:DataObjectReference" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Pointer to a PropertyKind.  The Energistics dictionary can be found at http://w3.energistics.org/energyML/data/common/v2.1/ancillary/PropertyKindDictionary_v2.1.0.xml.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="LabelPerComponent" type="eml:String64" minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>Labels for each component of a vector or tensor property in a linearized way. 
+REMINDER: First (left) given dimension is slowest and last (right) given dimension is fastest.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="SupportingRepresentation" type="eml:DataObjectReference" minOccurs="1" maxOccurs="1"/>
+					<xs:element name="LocalCrs" type="eml:DataObjectReference" minOccurs="0" maxOccurs="1"/>
+					<xs:element name="TimeOrIntervalSeries" type="eml:TimeOrIntervalSeries" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="AbstractValuesProperty" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Base class for property values. Each derived element provides specific property values, including point property in support of geometries.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="resqml:AbstractProperty">
+				<xs:sequence>
+					<xs:element name="ValuesForPatch" type="eml:AbstractValueArray" minOccurs="1" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>If the rep has no explicit patch, use only 1 ValuesForPatch.  If the rep has &gt; 1 explicit patch, use as many ValuesforPatch as patches of the rep. The ordering of ValuesForPatch matches the ordering of the patches in the xml document of the representation.  </xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Facet" type="eml:PropertyKindFacet" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="BooleanArrayFromDiscretePropertyArray">
+		<xs:annotation>
+			<xs:documentation>An array of Boolean values that is explicitly defined by indicating which indices in the array are either true or false. This class is used to represent very sparse true or false data, based on a discrete property.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="eml:AbstractBooleanArray">
+				<xs:sequence>
+					<xs:element name="Value" type="xs:long" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Integer to match for the value to be considered true</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Property" type="eml:DataObjectReference" minOccurs="1" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="BooleanProperty" type="resqml:BooleanProperty" substitutionGroup="eml:AbstractDataObject"/>
+	<xs:complexType name="BooleanProperty">
+		<xs:annotation>
+			<xs:documentation>Information specific to one Boolean property.
+Used to capture a choice between 2 and only 2 possible values/states for each indexable element of a data object, for example, identifying active cells of a grid..</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="resqml:AbstractValuesProperty">
+				<xs:sequence/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="CommentProperty" type="resqml:CommentProperty" substitutionGroup="eml:AbstractDataObject"/>
+	<xs:complexType name="CommentProperty">
+		<xs:annotation>
+			<xs:documentation>Information specific to one comment property.
+Used to capture comments or annotations associated with a given element type in a data-object, for example, associating comments on the specific location of a well path.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="resqml:AbstractValuesProperty">
+				<xs:sequence>
+					<xs:element name="Language" type="eml:String64" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Identify the language (e.g., US English or French) of the string. It is recommended that language names conform to ISO 639.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="ContinuousProperty" type="resqml:ContinuousProperty" substitutionGroup="eml:AbstractDataObject"/>
+	<xs:complexType name="ContinuousProperty">
+		<xs:annotation>
+			<xs:documentation>Most common type of property used for storing rock or fluid attributes; all are represented as doubles. 
+Statistics about values such as maximum and minimum can be found in the statistics of each ValueForPatch.
+BUSINESS RULE: It also contains a unit of measure, which can be different from the unit of measure of its property type, but it must be convertible into this unit.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="resqml:AbstractValuesProperty">
+				<xs:sequence>
+					<xs:element name="Uom" type="eml:UnitOfMeasureExt" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Unit of measure for the property.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="CustomUnitDictionary" type="eml:DataObjectReference" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="DiscreteProperty" type="resqml:DiscreteProperty" substitutionGroup="eml:AbstractDataObject"/>
+	<xs:complexType name="DiscreteProperty">
+		<xs:annotation>
+			<xs:documentation>Contains discrete integer values; typically used to store any type of index.
+Statistics about values such as maximum and minimum can be found in the statistics of each ValueForPatch.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="resqml:AbstractValuesProperty">
+				<xs:sequence>
+					<xs:element name="CategoryLookup" type="eml:DataObjectReference" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="PointsProperty" type="resqml:PointsProperty" substitutionGroup="eml:AbstractDataObject"/>
+	<xs:complexType name="PointsProperty">
+		<xs:annotation>
+			<xs:documentation>Represents the geometric information that should *not* be used as representation geometry, but should be used in another context where the location or geometrical vectorial distances are needed.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="resqml:AbstractProperty">
+				<xs:sequence>
+					<xs:element name="PointsForPatch" type="resqml:AbstractPoint3dArray" minOccurs="1" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>Geometric points (or vectors) to be attached to the specified indexable elements.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<!-- ═══════════════════════════════════════════════════════════════════ -->
+	<!-- 2.3.0 #7: SimulationRunMetadata                                    -->
+	<!-- ═══════════════════════════════════════════════════════════════════ -->
+	<xs:element name="SimulationRunMetadata" type="resqml:SimulationRunMetadata" substitutionGroup="eml:AbstractDataObject"/>
+	<xs:complexType name="SimulationRunMetadata">
+		<xs:annotation>
+			<xs:documentation>Captures metadata about a reservoir simulation run: which simulator was used, version, run date, and references to input/output collections. Enables OSDU ReservoirSimulation record population without parsing simulator-specific output files.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="eml:AbstractObject">
+				<xs:sequence>
+					<xs:element name="SimulatorName" type="eml:String256" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Name of the simulator (e.g. Eclipse, Intersect, tNavigator, OPM Flow).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="SimulatorVersion" type="eml:String256" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Version string of the simulator.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="RunDate" type="xs:dateTime" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Date and time when the simulation run started.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="RunDurationSeconds" type="xs:double" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Wall-clock duration of the simulation run in seconds.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="InputCollection" type="eml:DataObjectReference" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Reference to the DataobjectCollection containing input objects (grid, properties, schedule).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="OutputCollection" type="eml:DataObjectReference" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Reference to the DataobjectCollection containing output objects (result properties, summary).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Grid" type="eml:DataObjectReference" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Reference to the grid representation used in the simulation.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="RealizationIndex" type="xs:nonNegativeInteger" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Index of the realization for ensemble/multi-realization runs.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Status" type="resqml:SimulationRunStatus" minOccurs="0" maxOccurs="1"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:simpleType name="SimulationRunStatus">
+		<xs:annotation>
+			<xs:documentation>Status of a simulation run.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="completed"/>
+			<xs:enumeration value="failed"/>
+			<xs:enumeration value="running"/>
+			<xs:enumeration value="queued"/>
+			<xs:enumeration value="cancelled"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- ═══════════════════════════════════════════════════════════════════ -->
+	<!-- 2.3.0 #8: SaturationFunctionSet                                    -->
+	<!-- ═══════════════════════════════════════════════════════════════════ -->
+	<xs:element name="SaturationFunctionSet" type="resqml:SaturationFunctionSet" substitutionGroup="eml:AbstractDataObject"/>
+	<xs:complexType name="SaturationFunctionSet">
+		<xs:annotation>
+			<xs:documentation>A set of saturation functions (relative permeability and capillary pressure curves) for one or more SCAL regions. Each SaturationFunction contains tabulated Kr and Pc data as a function of saturation. Maps to OSDU SaturationFunctionSet when that schema is created.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="eml:AbstractObject">
+				<xs:sequence>
+					<xs:element name="RockFluidOrganization" type="eml:DataObjectReference" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>Reference to the RockFluidOrganizationInterpretation that defines SCAL regions.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Function" type="resqml:SaturationFunction" minOccurs="1" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="SaturationFunction">
+		<xs:annotation>
+			<xs:documentation>A single saturation function (Kr or Pc curve) for a specific SCAL region and fluid pair.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="RegionIndex" type="xs:nonNegativeInteger" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>0-based index of the SCAL region this function applies to.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FunctionKind" type="resqml:SaturationFunctionKind" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="WettingPhase" type="resqml:FluidPhase" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="NonWettingPhase" type="resqml:FluidPhase" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="SaturationValues" type="eml:AbstractFloatingPointArray" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>Saturation values (independent variable), typically wetting phase saturation from 0 to 1.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FunctionValues" type="eml:AbstractFloatingPointArray" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>Corresponding Kr or Pc values (dependent variable).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CapillaryPressureUom" type="eml:PressureUomExt" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>Unit of measure for capillary pressure values. Required when FunctionKind is capillary pressure.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="SaturationFunctionKind">
+		<xs:annotation>
+			<xs:documentation>Kind of saturation function.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="relative permeability">
+				<xs:annotation>
+					<xs:documentation>Relative permeability (Kr) as a function of saturation.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="capillary pressure">
+				<xs:annotation>
+					<xs:documentation>Capillary pressure (Pc) as a function of saturation.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="FluidPhase">
+		<xs:annotation>
+			<xs:documentation>Fluid phase for saturation functions.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="water"/>
+			<xs:enumeration value="oil"/>
+			<xs:enumeration value="gas"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

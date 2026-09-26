@@ -152,52 +152,32 @@ def _enrich_osdu_metadata(
     if not metadata and not projected_epsg and not vertical_epsg:
         return
 
-    # Build ExtraMetadata XML snippet (uses whatever ns prefix the file has)
-    # We'll detect and use the correct prefix during injection
-
     # Process ZIP
     tmp = tempfile.mktemp(suffix=".epc")
     with zipfile.ZipFile(epc_path, 'r') as zin, zipfile.ZipFile(tmp, 'w') as zout:
         for item in zin.namelist():
             data = zin.read(item)
-            if item.endswith('.xml') and b'<' in data:
+            if item.endswith('.xml') and b'<' in data and metadata:
                 text = data.decode('utf-8')
-                # Detect namespace prefix for resqml
-                resqml_prefix = "resqml2"
-                if 'xmlns:resqml=' in text:
-                    resqml_prefix = "resqml"
-
-                # Add OSDU metadata before closing tag for RESQML objects
-                if 'resqmlv2' in text and metadata:
-                    meta_snippet = ""
-                    for key, value in metadata.items():
-                        meta_snippet += (
-                            f'<{resqml_prefix}:ExtraMetadata>'
-                            f'<{resqml_prefix}:Name>{key}</{resqml_prefix}:Name>'
-                            f'<{resqml_prefix}:Value>{_xml_escape(value)}</{resqml_prefix}:Value>'
-                            f'</{resqml_prefix}:ExtraMetadata>\n'
-                        )
-                    # Insert before the closing root tag
-                    text = re.sub(
-                        r'(</(?:resqml2?|resqml):\w+>)\s*$',
-                        meta_snippet + r'\1\n',
-                        text,
-                    )
-                elif 'commonv2' in text and metadata and 'PropertyKind' not in item:
-                    # EML objects: use ExtensionNameValue
-                    eml_prefix = "eml"
+                # RESQML 2.2 / EML 2.3: every AbstractObject carries OSDU metadata
+                # as <eml:ExtensionNameValue> placed right after <eml:Citation>
+                # (its schema position; appending at end is invalid). PropertyKind
+                # and EpcExternalPartReference are structural and left untouched.
+                if '</eml:Citation>' in text and not any(
+                    skip in item for skip in ('PropertyKind', 'EpcExternalPart')
+                ):
                     ext_snippet = ""
                     for key, value in metadata.items():
                         ext_snippet += (
-                            f'<{eml_prefix}:ExtensionNameValue>'
-                            f'<{eml_prefix}:Name>{key}</{eml_prefix}:Name>'
-                            f'<{eml_prefix}:Value><{eml_prefix}:Value>{_xml_escape(value)}</{eml_prefix}:Value></{eml_prefix}:Value>'
-                            f'</{eml_prefix}:ExtensionNameValue>\n'
+                            '<eml:ExtensionNameValue>'
+                            f'<eml:Name>{key}</eml:Name>'
+                            f'<eml:Value>{_xml_escape(value)}</eml:Value>'
+                            '</eml:ExtensionNameValue>'
                         )
-                    text = re.sub(
-                        r'(</eml:\w+>)\s*$',
-                        ext_snippet + r'\1\n',
-                        text,
+                    text = text.replace(
+                        '</eml:Citation>',
+                        '</eml:Citation>\n  ' + ext_snippet,
+                        1,
                     )
                 data = text.encode('utf-8')
             zout.writestr(item, data)

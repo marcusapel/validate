@@ -99,7 +99,7 @@ def _convert_points_201_to_22(pts: Any, ctx: ConversionContext = None) -> Option
             zvalues=zvalues_22,
         )
 
-    # Parametric arrays — need to convert sub-arrays
+    # Parametric arrays - need to convert sub-arrays
     if "Parametric" in cls_name and cls_name == "Point3DParametricArray":
         params = getattr(pts, 'parameters', None)
         params_22 = _convert_double_array_to_float(params) if params else None

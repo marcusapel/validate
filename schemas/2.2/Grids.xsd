@@ -802,7 +802,7 @@ May be used to change the grid topology for either a Cartesian or a radial grid,
 						<xs:annotation>
 							<xs:documentation>List of parent cells that are to be retained at their original resolution and are not to be included within a local grid. The "omit" allows non-rectangular local grids to be specified.
 
-0-based indexing follows NI x NJ x NK relative to the parent window cell count—not to the parent grid.</xs:documentation>
+0-based indexing follows NI x NJ x NK relative to the parent window cell count-not to the parent grid.</xs:documentation>
 						</xs:annotation>
 					</xs:element>
 					<xs:element name="JRegrid" type="resqml:Regrid" minOccurs="1" maxOccurs="1"/>

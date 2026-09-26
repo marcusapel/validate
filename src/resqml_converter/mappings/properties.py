@@ -91,6 +91,11 @@ def convert_discrete_prop_to_22(obj: Any, ctx: ConversionContext) -> Any:
         if arr_22:
             values_for_patch.append(arr_22)
 
+    # A property with no non-empty value patches (e.g. an empty cellForFaultFace
+    # constant array) cannot form a schema-valid 2.2 object; skip it entirely.
+    if not values_for_patch:
+        return None
+
     prop_kind_dor = _convert_property_kind_201_to_22_dor(obj, ctx)
 
     indexable = None
@@ -424,9 +429,14 @@ def _convert_int_values_201_to_22(vals: Any) -> Optional[Any]:
     if "Hdf5" in cls_name:
         return convert_int_hdf5_array_to_ext(vals)
     if "ConstantArray" in cls_name:
+        # A zero-length constant array carries no data and is invalid in 2.2
+        # (Count has minInclusive=1); drop it so the empty patch is skipped.
+        const_count = getattr(vals, 'count', 1)
+        if not const_count or const_count < 1:
+            return None
         return eml23.IntegerConstantArray(
             value=getattr(vals, 'value', 0),
-            count=getattr(vals, 'count', 1),
+            count=const_count,
         )
     # Fallback: try HDF5 path
     ext = convert_int_hdf5_array_to_ext(vals)

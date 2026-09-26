@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xs:schema targetNamespace="http://www.energistics.org/energyml/data/resqmlv2" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:eml="http://www.energistics.org/energyml/data/commonv2" xmlns:resqml="http://www.energistics.org/energyml/data/resqmlv2" elementFormDefault="qualified" version="2.0">
 	<xs:annotation>
-		<xs:documentation>Objects that exist a priori, in the natural world, for example: the rock formations and how they are positioned with regard to each other; the fluids that are present before production; or the position of the geological intervals with respect to each. Some of these objects are static—such as geologic intervals---while others are dynamic—such as fluids; their properties, geometries, and quantities may change over time during the course of field production.</xs:documentation>
+		<xs:documentation>Objects that exist a priori, in the natural world, for example: the rock formations and how they are positioned with regard to each other; the fluids that are present before production; or the position of the geological intervals with respect to each. Some of these objects are static-such as geologic intervals---while others are dynamic-such as fluids; their properties, geometries, and quantities may change over time during the course of field production.</xs:documentation>
 	</xs:annotation>
 	<xs:import namespace="http://www.energistics.org/energyml/data/commonv2" schemaLocation="../../../commonv2/v2.0/xsd_schemas/AllCommonObjects.xsd"/><xs:include schemaLocation="Features.xsd"/>
 	<xs:include schemaLocation="Common.xsd"/>
@@ -192,7 +192,7 @@ BUSINESS RULE: The name must reference a well-known chronostratigraphic unit (su
 	</xs:complexType>
 	<xs:complexType name="AbstractGeologicFeature" abstract="true">
 		<xs:annotation>
-			<xs:documentation>Objects that exist a priori, in the natural world, for example: the rock formations and how they are positioned with regard to each other; the fluids that are present before production; or the position of the geological intervals with respect to each. Some of these objects are static—such as geologic intervals---while others are dynamic—such as fluids; their properties, geometries, and quantities may change over time during the course of field production.
+			<xs:documentation>Objects that exist a priori, in the natural world, for example: the rock formations and how they are positioned with regard to each other; the fluids that are present before production; or the position of the geological intervals with respect to each. Some of these objects are static-such as geologic intervals---while others are dynamic-such as fluids; their properties, geometries, and quantities may change over time during the course of field production.
 RESQML has these types of features: geologic and technical.</xs:documentation>
 		</xs:annotation>
 		<xs:complexContent>

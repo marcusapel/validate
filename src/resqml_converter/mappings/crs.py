@@ -149,7 +149,7 @@ def _decompose_crs_201_to_22(obj: Any, ctx: ConversionContext, is_time: bool) ->
 
 @registry.register_22_to_201(r"LocalDepth3[dD][Cc]rs")
 def convert_local_depth_3d_crs_to_201(obj: Any, ctx: ConversionContext) -> Any:
-    """LocalDepth3dCrs from 2.2 back to 2.0.1 — just update schema_version."""
+    """LocalDepth3dCrs from 2.2 back to 2.0.1 - just update schema_version."""
     obj.schema_version = SCHEMA_VERSION_201
     return obj
 
